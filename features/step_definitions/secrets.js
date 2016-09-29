@@ -27,7 +27,10 @@ module.exports = function server() {
                 bearer: this.jwt
             },
             json: true
-        }).then(response => Assert.equal(response.statusCode, 201));
+        }).then(response => {
+            this.secretId = response.body.id;
+            Assert.equal(response.statusCode, 201);
+        });
     });
 
     this.When(/^the "main" job is started$/, () =>
@@ -79,6 +82,47 @@ module.exports = function server() {
                 Assert.equal(resp.body.status, 'SUCCESS');
                 Assert.equal(resp.statusCode, 200);
             });
+        })
+    );
+
+    this.When(/^the user can view the secret exists$/, () =>
+        request({
+            uri: `${this.instance}/${this.namespace}/secrets/${this.secretId}`,
+            method: 'GET',
+            auth: {
+                bearer: this.jwt
+            },
+            json: true
+        }).then(response => {
+            Assert.isNotNull(response.body.name);
+            Assert.equal(response.statusCode, 200);
+        })
+    );
+
+    this.When(/^the user can not view the secret exists$/, () =>
+        request({
+            uri: `${this.instance}/${this.namespace}/secrets/${this.secretId}`,
+            method: 'GET',
+            auth: {
+                bearer: this.jwt
+            },
+            json: true
+        }).then(response => {
+            Assert.equal(response.statusCode, 403);
+        })
+    );
+
+    this.When(/^the user can not view the value$/, () =>
+        request({
+            uri: `${this.instance}/${this.namespace}/jobs/${this.secondJobId}/builds`,
+            method: 'GET',
+            auth: {
+                bearer: this.jwt
+            },
+            json: true
+        }).then(response => {
+            Assert.isUndefined(response.body.value);
+            Assert.equal(response.statusCode, 200);
         })
     );
 };
